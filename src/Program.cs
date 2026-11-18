@@ -875,7 +875,7 @@ namespace TwinName {
                 var picture = new PictureBox { Image = logo, SizeMode = PictureBoxSizeMode.Zoom,
                     Location = new Point(117, 12), Size = new Size(184, 184), AccessibleName = "Logo Ficoapps" };
                 dialog.Controls.Add(picture);
-                var title = LabelFor("TwinName 1.1.1", 17, FontStyle.Bold, Ink);
+                var title = LabelFor("TwinName 1.1.2", 17, FontStyle.Bold, Ink);
                 title.Location = new Point(50, 208);
                 dialog.Controls.Add(title);
                 var owner = LabelFor("Progetto e marchio Ficoapps" + Environment.NewLine + Credit, 11, FontStyle.Regular, Muted);
