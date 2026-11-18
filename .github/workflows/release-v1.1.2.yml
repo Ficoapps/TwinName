@@ -1,0 +1,95 @@
+name: Publish TwinName v1.1.2
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/release-v1.1.2.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  publish-windows:
+    name: Build and publish Windows ZIP
+    runs-on: windows-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Build TwinName
+        shell: pwsh
+        run: |
+          dotnet restore src/TwinName.csproj
+          if ($LASTEXITCODE -ne 0) { throw "dotnet restore failed" }
+          dotnet build src/TwinName.csproj --configuration Release --no-restore --output dist
+          if ($LASTEXITCODE -ne 0) { throw "dotnet build failed" }
+          if (-not (Test-Path "dist/TwinName.exe")) { throw "TwinName.exe missing" }
+          $ver = (Get-Item "dist/TwinName.exe").VersionInfo.FileVersion
+          if ($ver -ne "1.1.2.0") { throw "Unexpected executable version: $ver" }
+
+      - name: Package Windows portable version
+        shell: pwsh
+        run: |
+          $readme = @(
+            "TwinName v1.1.2 - Ficoapps",
+            "",
+            "ITALIANO",
+            "Estrai tutti i file dallo ZIP e apri TwinName.exe su Windows 10 o 11.",
+            "Nella scheda Duplicati puoi visualizzare e copiare il percorso completo di ogni file.",
+            "I file selezionati per l'eliminazione vengono spostati nel Cestino solo dopo conferma.",
+            "",
+            "ENGLISH",
+            "Extract the ZIP contents and run TwinName.exe on Windows 10 or 11.",
+            "The Duplicates tab shows each file's full path, which can be selected and copied.",
+            "Selected duplicate files are moved to the Recycle Bin only after confirmation.",
+            "",
+            "Copyright (c) 2026 Ficoapps",
+            "https://github.com/Ficoapps/TwinName"
+          )
+          $readme | Set-Content "dist/LEGGIMI.txt" -Encoding UTF8
+          Compress-Archive -Path "dist/TwinName.exe", "dist/LEGGIMI.txt" -DestinationPath "TwinName-1.1.2-Windows.zip" -Force
+
+      - name: Write bilingual release notes
+        shell: pwsh
+        run: |
+          $notes = @'
+          ## Italiano
+
+          **TwinName v1.1.2** per Windows 10 e 11.
+
+          ### Novità
+          - Nella scheda **Duplicati** ogni file mostra il suo **percorso completo** sotto l'anteprima.
+          - I percorsi lunghi sono scorrevoli e si possono copiare con **Ctrl+A** e **Ctrl+C**.
+          - Restano disponibili anteprime, selezione automatica dei duplicati identici, eliminazione nel Cestino previa conferma e rinomina basata sul nome della cartella.
+
+          **Installazione:** scarica `TwinName-1.1.2-Windows.zip`, estrailo e avvia `TwinName.exe`. Nessuna installazione necessaria.
+
+          ## English
+
+          **TwinName v1.1.2** for Windows 10 and 11.
+
+          ### What's new
+          - Every file in the **Duplicates** tab now displays its **full path** underneath the preview.
+          - Long paths are scrollable and can be copied with **Ctrl+A** and **Ctrl+C**.
+          - File previews, automatic exact-duplicate selection, confirmed Recycle Bin removal, and folder-based batch renaming are retained.
+
+          **Installation:** download `TwinName-1.1.2-Windows.zip`, extract it, and run `TwinName.exe`. No installer required.
+
+          © 2026 Ficoapps
+          '@
+          $notes | Set-Content "release-notes.md" -Encoding UTF8
+
+      - name: Publish GitHub Release v1.1.2
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create v1.1.2 "TwinName-1.1.2-Windows.zip" --repo "$env:GITHUB_REPOSITORY" --target "$env:GITHUB_SHA" --title "TwinName v1.1.2" --notes-file "release-notes.md" --latest
+          if ($LASTEXITCODE -ne 0) { throw "GitHub Release creation failed" }
