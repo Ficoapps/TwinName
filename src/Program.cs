@@ -15,9 +15,9 @@ using System.Windows.Forms;
 [assembly: AssemblyProduct("TwinName")]
 [assembly: AssemblyCompany("Ficoapps")]
 [assembly: AssemblyCopyright("© 2026 Ficoapps")]
-[assembly: AssemblyVersion("1.1.1.0")]
+[assembly: AssemblyVersion("1.1.2.0")]
 [assembly: TargetFramework(".NETFramework,Version=v4.5", FrameworkDisplayName = ".NET Framework 4.5")]
-[assembly: AssemblyFileVersion("1.1.1.0")]
+[assembly: AssemblyFileVersion("1.1.2.0")]
 
 namespace TwinName {
     internal static class Program {
@@ -562,18 +562,27 @@ namespace TwinName {
         }
 
         private void AddCard(FileEntry file, CancellationToken token) {
-            var card = new Panel { Width = 229, Height = 271, BackColor = Color.White, Margin = new Padding(0, 0, 9, 9) };
+            var card = new Panel { Width = 229, Height = 331, BackColor = Color.White, Margin = new Padding(0, 0, 9, 9) };
             var preview = new PictureBox { Bounds = new Rectangle(8, 8, 213, 145), BackColor = Background,
                 SizeMode = PictureBoxSizeMode.Zoom, Visible = false };
             var placeholder = new Label { Bounds = preview.Bounds, BackColor = Background, ForeColor = Muted,
                 TextAlign = ContentAlignment.MiddleCenter, AutoEllipsis = true, Text = "Caricamento anteprima…" };
             var name = new Label { Bounds = new Rectangle(9, 159, 211, 24), Text = Path.GetFileName(file.Path),
                 Font = new Font(Font, FontStyle.Bold), AutoEllipsis = true };
-            var meta = new Label { Bounds = new Rectangle(9, 185, 211, 20), Text = FileBrowserPane.DisplaySize(file.Length), AutoEllipsis = true, ForeColor = Muted };
+            var path = new TextBox { Bounds = new Rectangle(9, 184, 211, 55), Text = file.Path,
+                Multiline = true, ScrollBars = ScrollBars.Vertical, ReadOnly = true, BackColor = Background,
+                AccessibleName = "Percorso completo di " + Path.GetFileName(file.Path) };
+            path.KeyDown += delegate(object sender, KeyEventArgs e) {
+                if (e.KeyData == (Keys.Control | Keys.A)) {
+                    path.SelectAll();
+                    e.SuppressKeyPress = true;
+                }
+            };
+            var meta = new Label { Bounds = new Rectangle(9, 245, 211, 20), Text = FileBrowserPane.DisplaySize(file.Length), AutoEllipsis = true, ForeColor = Muted };
             var open = MakeButton("Mostra nella cartella", false);
             open.MinimumSize = new Size(0, 25);
-            open.Location = new Point(8, 240);
-            var select = new CheckBox { Text = "Seleziona", AutoSize = true, Location = new Point(10, 210),
+            open.Location = new Point(8, 300);
+            var select = new CheckBox { Text = "Seleziona", AutoSize = true, Location = new Point(10, 270),
                 Checked = duplicateSelection.ContainsKey(file.Path),
                 AccessibleName = "Seleziona " + Path.GetFileName(file.Path) };
             select.CheckedChanged += delegate {
@@ -587,7 +596,7 @@ namespace TwinName {
                     Process.Start(new ProcessStartInfo(explorer, "/select,\"" + file.Path + "\"") { UseShellExecute = true });
                 } catch (Exception e) { ReportError("Apertura di Esplora file", e); }
             };
-            card.Controls.AddRange(new Control[] { preview, placeholder, name, meta, select, open });
+            card.Controls.AddRange(new Control[] { preview, placeholder, name, path, meta, select, open });
             cards.Controls.Add(card);
             var tip = new ToolTip();
             tip.SetToolTip(name, file.Path);
